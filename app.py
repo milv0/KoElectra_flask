@@ -1,5 +1,5 @@
 import os
-import chatbot as KoElectra
+import chatbot as ko_electra
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
 
@@ -28,11 +28,11 @@ def reactKobertChatBot(chat_id):
             "response": "듣고 있어요. 더 말씀해주세요~"
         })
 
-    most_similar_sentence = KoElectra.chat(message)
+    most_similar_sentence = ko_electra.chat(message)
     return jsonify({
         "response": most_similar_sentence,
     })
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8081)))

@@ -2,21 +2,24 @@ import torch
 import random
 import os
 import logging
+import openai
+import 
+import warnings
 
-# KoElectra 
-from model.chatbot.kobert.classifier import KoELECTRAforSequenceClassfication
+# KoElectra
+from classifier import KoELECTRAforSequenceClassfication
 from transformers import ElectraModel, ElectraConfig, ElectraTokenizer
-from kobert_transformers import get_kobert_model
 
 # warning 출력 안되게
 logging.getLogger("transformers").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", message=".*resume_download.*", category=FutureWarning)
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"  
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 def load_wellness_answer(category_path, answer_path):
-    c_f = open(category_path, 'r', encoding="UTF8")
-    a_f = open(answer_path, 'r', encoding="UTF8")
+    c_f = open(category_path, 'r')
+    a_f = open(answer_path, 'r')
 
     category_lines = c_f.readlines()
     answer_lines = a_f.readlines()
@@ -45,9 +48,9 @@ def load_model(checkpoint_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_config = ElectraConfig.from_pretrained("monologg/koelectra-base-v3-discriminator")
 
-    model = KoELECTRAforSequenceClassfication(model_config, num_labels=432, hidden_dropout_prob=0.1)    
+    model = KoELECTRAforSequenceClassfication(model_config, num_labels=432, hidden_dropout_prob=0.1)
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    model.load_state_dict(checkpoint['model_state_dict'], strict = False)
+    model.load_state_dict(checkpoint['model_state_dict'])
     model.to(device)
     model.eval()
 
@@ -75,15 +78,15 @@ def get_answer(category, answer, output, input_sentence):
     max_index = torch.argmax(softmax_logit).item()
     max_index_value = softmax_logit[torch.argmax(softmax_logit)].item()
 
-    threshold = 0.35  
+    threshold = 0.35
 
     selected_categories = []
     for i, value in enumerate(softmax_logit):
         if value > threshold:
             if str(i) in category:
                 selected_categories.append(category[str(i)])
-                print(f"Softmax 값이 threshold({threshold}) 이상인 카테고리: {category[str(i)]}")
-
+                #print(f"Softmax 값이 threshold({threshold}) 이상인 카테고리: {category[str(i)]}")
+                print(f"카테고리 분류 -> [ {category[str(i)]} ]")
     if not selected_categories:
         return "선택된 카테고리가 없습니다. 다시 입력해주세요", None, max_index_value, []
 
@@ -94,65 +97,87 @@ def get_answer(category, answer, output, input_sentence):
 
     if not all_answers:
         return "선택된 카테고리에 대한 답변이 없습니다.", None, max_index_value, []
+3. "저는 심리 상담을 해주는 AI 기룡이에요."
+    openai.api_key = "sk-proj-zOVzKRhoYruJJhEkU24DT3BlbkFJXdYQxKnCQHXFBpfxbc2q"
+    # MODEL = "gpt-3.5-turbo"
+    MODEL = "gpt-4-turbo"
 
-    selected_answer = random.choice(all_answers)
+    # 감정 분류 모델에서 예측한 카테고리
+    predicted_category = selected_categories
 
-    return selected_answer, selected_categories, max_index_value, all_answers
+    # 입력받은 사용자 문장
+    user_input = input_sentence
+
+    # 프롬프트 설정
+    prompts = {
+        "formal": f"예측한 카테고리는 '{predicted_category}'입니다. 사용자 문장과 예측한 카테고리를 기반으로 매우 공식적인 말투(~다 로 끝나는)로 심리 상담 챗봇에 쓸 답변을 생성해주세요. 답변은 100자 이하로 만들어주세요.",
+        "casual": f"예측한 카테고리는 '{predicted_category}'입니다. 사용자 문장과 예측한 카테고리를 기반으로 도움과 격려가 되는 친근하고 편안한 말투로 반말 체를 사용하여 심리 상담 챗봇에 쓸 답변을 생성해주세요. 답변은 100자 이하로 만들어주세요.",
+        "polite" : f"The predicted category is '{predicted_category}. Based on your sentences and predicted categories, please create answers for your psychological counseling chatbot with a friendliness, polite tone that is helpful and encouraging. Please make your answers up to 200 characters",
+        "default": f"예측한 카테고리는 '{predicted_category}'입니다. 사용자 문장과 예측한 카테고리를 기반으로 도움과 격려가 되는
+ 부드러운 문장으로 심리 상담 챗봇에 쓸 답변을 생성해주세요. 답변은 100자 이하로 만들어주세요."
+    }
+
+    # 임시로 랜덤 타입
+   # chatbot_type = random.randint(1, 3)
+    chatbot_type = 3
+    match chatbot_type:
+        case 1:
+            prompt = prompts.get(chatbot_type, prompts["formal"])    # 공식적이고 예의바른 말투
+            print('<사무적인 말투>')
+        case 2:
+            prompt = prompts.get(chatbot_type, prompts["casual"])    # 친근하고 편안한 말투로 반말 체
+            print('<친근한 반말투>')
+        case 3:
+            prompt = prompts.get(chatbot_type, prompts["polite"])    # 예의바르면서도 부드럽고 온화한 말투
+            print('<부드러운 말투>')
+        case _:
+            prompt = prompts.get(chatbot_type, prompts["default"])   # 기본
 
 
-def find_most_similar_sentence(input_sentence, candidate_sentences, output):
-    model = ElectraModel.from_pretrained("monologg/koelectra-base-v3-discriminator")
-    tokenizer = ElectraTokenizer.from_pretrained("monologg/koelectra-base-v3-discriminator")
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": user_input}
+    ]
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
+    response = openai.ChatCompletion.create(
+        model=MODEL,
+        messages=messages,
+        temperature=0.9,
+        max_tokens=200,
+        n=1,
+    )
 
-    def get_sentence_embedding(sentence):
-        inputs = tokenizer.encode_plus(sentence, return_tensors='pt', padding=True, truncation=True, max_length=512)
-        inputs = {k: v.to(device) for k, v in inputs.items()}
-        with torch.no_grad():
-            outputs = model(**inputs)
-        sentence_embedding = outputs.last_hidden_state.mean(dim=1)
-        return sentence_embedding
+    # 응답 처리
+    original_response = response.choices[0].message.content
+    if not original_response.endswith('.'):
+        last_sentence = re.split(r'[.!?]', original_response)[-1].strip()
+        if last_sentence:
+            final_response = original_response + '.'
+        else:
+            final_response = original_response
+    else:
+        final_response = original_response
 
-    input_embedding = get_sentence_embedding(input_sentence)
+    return final_response
 
-    selected_sentence = None
-
-    similarities = []
-
-    for candidate in candidate_sentences:
-        candidate_embedding = get_sentence_embedding(candidate)
-        similarity = torch.cosine_similarity(input_embedding, candidate_embedding, dim=1)
-        similarities.append((candidate, similarity.item()))
-
-    top_similarities = sorted(similarities, key=lambda x: x[1], reverse=True)[:5]
-
-    selected_sentence, _ = random.choice(top_similarities)
-
-    print("유사도 상위 5개 문장과 유사도 수치:")
-    for sentence, similarity in top_similarities:
-        print(f"유사도: {similarity:.4f} , 문장: {sentence}" )
-
-    return selected_sentence
 
 def chat(message):
     root_path = "."
-    answer_path = f"{root_path}/data/answer_R_v1.txt"
-    category_path = f"{root_path}/data/category_R.txt"
-    checkpoint_path = f"{root_path}/checkpoint/electra_R_v1.pth"
+    answer_path = f"{root_path}/data/new_answer.txt"
+    category_path = f"{root_path}/data/new_category_v2.txt"
+    checkpoint_path = f"{root_path}/checkpoint/new_electra_v5.pth"
 
     category, answer = load_wellness_answer(category_path, answer_path)
     model, tokenizer, device = load_model(checkpoint_path)
 
     sent = str(message)
-    if '안녕?' in sent or '안녕!' in sent or '안녕' in sent:
-        most_similar_sentence = '반가워요! 저는 기룡이에요!'
-        return most_similar_sentence
 
     data = preprocess_input(tokenizer, sent, device, 512)
     output = model(**data)
     answer, category, max_index_value, all_answers = get_answer(category, answer, output, sent)
 
-    most_similar_sentence = find_most_similar_sentence(sent, all_answers, output)
-    return most_similar_sentence
+    chatbot_answer = gpt(sent,category)
+    print(f"\n🤖 챗봇 : {chatbot_answer}")
+    print()
+
+    return chatbot_answer
