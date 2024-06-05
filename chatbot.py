@@ -98,7 +98,7 @@ def get_answer(category, answer, output, input_sentence):
     if not all_answers:
         return "선택된 카테고리에 대한 답변이 없습니다.", None, max_index_value, []
 3. "저는 심리 상담을 해주는 AI 기룡이에요."
-    openai.api_key = "sk-proj-zOVzKRhoYruJJhEkU24DT3BlbkFJXdYQxKnCQHXFBpfxbc2q"
+    openai.api_key = "OPENAI_KEY"
     # MODEL = "gpt-3.5-turbo"
     MODEL = "gpt-4-turbo"
 
