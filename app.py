@@ -7,8 +7,8 @@ from werkzeug.exceptions import BadRequest
 
 
 from model.emotion import Emotion
-from model.recomm import recommandMusics
 from model.musicgen import generate_music
+
 import model.chatbot as ko_electra
 
 import boto3
@@ -29,7 +29,6 @@ def isRunning():
 
 
 @app.route('/chatbot/<int:chat_id>', methods=['POST']) #chat_id에 맞게 채팅방 생성, 밑에 매개변수에 꼭 있어야 함
-# def reactKobertChatBot(chat_id):
 def reactKoElectraChatBot(chat_id):
 
     # POST 요청의 본문을 추출
@@ -78,31 +77,37 @@ def analyze():
 
 
 @app.route('/music/recommendation', methods=["POST"])
+
 def recommendMusic():
-    # 감정이 상수 혹은 string으로 들어와야 함(emotion.py 참고)
     data = request.json
-    emotionI = data['emotion']
-    
+
     memberID = data['memberId']
     emotionI = data['afterEmotion']
+
     print(f"\n📍 ID : {memberID}")
+
     print(f"\n📍 감정 : {emotionI}")
-    
-    if emotionI is None:        # 입력 베이스 감정이 없을 때
-        print(emotionI)
-        return None
 
-    # bgm 생성 py 연결
-    generate_music(memberID, emotionI)
+    if not memberID:
+        return jsonify({'error': 'memberId 값이 없습니다.'}), 400
 
+    if not emotionI:
+        return jsonify({'error': 'afterEmotion 값이 없습니다.'}), 400
 
-    # 전체 결과 (데이터 전송용)
-    # return jsonify({
-    #     'empathy': empathy_results,
-    #     'overcome' : overcome_results
-    # })
-
-    # 데이터 전송 형태 json -> { 키 : 리스트[{ 키 : 밸류 }, ...], 키 : 리스트[{ 키 : 밸류 }, ... ] }
+    try:
+        generate_music(memberID, emotionI) # 감정에 따른 BGM 생성
+        return jsonify({'message': '음악 파일이 성공적으로 생성되었습니다.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+        
 
 if __name__ == '__main__':
-    app.run(debug=False,host="0.0.0.0",port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=False,host="0.0.0.0",port=int(os.environ.get("PORT", 8081)))
+
+
+
+
+
+
+
+
