@@ -8,6 +8,7 @@ from werkzeug.exceptions import BadRequest
 
 from model.emotion import Emotion
 from model.recomm import recommandMusics
+from model.musicgen import generate_music
 import model.chatbot as ko_electra
 
 import boto3
@@ -81,40 +82,25 @@ def recommendMusic():
     # 감정이 상수 혹은 string으로 들어와야 함(emotion.py 참고)
     data = request.json
     emotionI = data['emotion']
+    
+    memberID = data['memberId']
+    emotionI = data['afterEmotion']
+    print(f"\n📍 ID : {memberID}")
     print(f"\n📍 감정 : {emotionI}")
-
+    
     if emotionI is None:        # 입력 베이스 감정이 없을 때
         print(emotionI)
         return None
 
-    empathy_tracks, overcome_tracks = recommandMusics(emotionI)
+    # bgm 생성 py 연결
+    generate_music(memberID, emotionI)
 
-    # 공감형 트랙
-    empathy_results = [
-    {'artist': empathy_tracks[0]['artists'][0]['name'], 'name': empathy_tracks[0]['name'], 'image': empathy_tracks[0]['album']['images'][2]['url']},
-    {'artist': empathy_tracks[1]['artists'][0]['name'], 'name': empathy_tracks[1]['name'], 'image': empathy_tracks[1]['album']['images'][2]['url']},
-    {'artist': empathy_tracks[2]['artists'][0]['name'], 'name': empathy_tracks[2]['name'], 'image': empathy_tracks[2]['album']['images'][2]['url']},
-    {'artist': empathy_tracks[3]['artists'][0]['name'], 'name': empathy_tracks[3]['name'], 'image': empathy_tracks[3]['album']['images'][2]['url']},
-    {'artist': empathy_tracks[4]['artists'][0]['name'], 'name': empathy_tracks[4]['name'], 'image': empathy_tracks[4]['album']['images'][2]['url']}
-]
-
-    # 극복형 트랙 (제 2 트랙)
-    overcome_results = [
-        {'artist': overcome_tracks[0]['artists'][0]['name'], 'name': overcome_tracks[0]['name'], 'image': overcome_tracks[0]['album']['images'][2]['url']},
-        {'artist': overcome_tracks[1]['artists'][0]['name'], 'name': overcome_tracks[1]['name'], 'image': overcome_tracks[1]['album']['images'][2]['url']},
-        {'artist': overcome_tracks[2]['artists'][0]['name'], 'name': overcome_tracks[2]['name'], 'image': overcome_tracks[2]['album']['images'][2]['url']},
-        {'artist': overcome_tracks[3]['artists'][0]['name'], 'name': overcome_tracks[3]['name'], 'image': overcome_tracks[3]['album']['images'][2]['url']},
-        {'artist': overcome_tracks[4]['artists'][0]['name'], 'name': overcome_tracks[4]['name'], 'image': overcome_tracks[4]['album']['images'][2]['url']}
-     ]
-
-    print(f"\n🎵 공감형 트랙 : {empathy_results}\n")
-    print(f"\n🎵 극복형 트랙 : {overcome_results}\n")
 
     # 전체 결과 (데이터 전송용)
-    return jsonify({
-        'empathy': empathy_results,
-        'overcome' : overcome_results
-    })
+    # return jsonify({
+    #     'empathy': empathy_results,
+    #     'overcome' : overcome_results
+    # })
 
     # 데이터 전송 형태 json -> { 키 : 리스트[{ 키 : 밸류 }, ...], 키 : 리스트[{ 키 : 밸류 }, ... ] }
 
