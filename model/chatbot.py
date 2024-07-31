@@ -8,7 +8,6 @@ import re
 # KoElectra
 from model.func.classifier import KoELECTRAforSequenceClassfication
 from transformers import ElectraModel, ElectraConfig, ElectraTokenizer
-#from kobert_transformers import get_kobert_model
 
 # warning 출력 안되게
 logging.getLogger("transformers").setLevel(logging.ERROR)
