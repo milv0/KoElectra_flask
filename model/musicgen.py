@@ -64,9 +64,11 @@ def generate_music(memberID, emotionI):
     file_name = generate_file_name(memberID, emotionI)
     audio_write(file_name, res[0].cpu(), model.sample_rate, strategy="loudness", loudness_compressor=True)
 
-    # S3에 WAV 파일 업로드
-    s3.upload_file(file_name, bucket_name, file_name)
-    print(f'{file_name} 파일이 S3 버킷에 업로드되었습니다.')
-
-
-    
+    # 파일 존재 여부 확인
+    import os
+    if os.path.isfile(f"{file_name}.wav"):
+        # S3에 WAV 파일 업로드
+        s3.upload_file(f"{file_name}.wav", bucket_name, f"{file_name}.wav")
+        print(f'\n🎶 {file_name}.wav 파일이 S3 버킷에 업로드되었습니다.\n')  
+    else:
+        print(f'\n{file_name}.wav 파일이 존재하지 않습니다.\n')iㅑ
