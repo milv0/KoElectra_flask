@@ -12,16 +12,17 @@ import boto3
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-# Slack 클라이언트 초기화
-slack_token = "YOUR_BO_TOKEN" # 실제 봇 토큰으로 교체해주세요
-slack_client = WebClient(token=slack_token)
-SLACK_CHANNEL = "YOUR_SLACK_CHANNEL_ID"
 
+# Slack key
+from key import SLACK_TOKEN, SLACK_CHANNEL_SERVER, SLACK_CHANNEL_CHATBOT, SLACK_CHANNEL_MUSIC
+
+# Slack 클라이언트 초기화
+slack_client = WebClient(token=SLACK_TOKEN)
 
 def send_slack_message(message):
     try:
         response = slack_client.chat_postMessage(
-            channel=SLACK_CHANNEL,
+            channel=SLACK_CHANNEL_MUSIC,
             text=message
         )
     except SlackApiError as e:
@@ -50,7 +51,7 @@ model.set_generation_params(
 
 # AWS S3 클라이언트 초기화 및 버킷 이름 설정
 s3 = boto3.client('s3')
-bucket_name = 'YOUR_BUCKET_NAME'  # S3 버킷 이름
+bucket_name = 'chatbotmg'  # S3 버킷 이름
 
 # 440Hz 비프 소리 생성 함수
 def get_bip_bip(bip_duration=0.125, frequency=440,
