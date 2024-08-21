@@ -20,26 +20,35 @@ import threading  # 이 줄을 추가합니다.
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
+
+# Slack key
+from key import SLACK_TOKEN, SLACK_CHANNEL_SERVER, SLACK_CHANNEL_CHATBOT, SLACK_CHANNEL_MUSIC
+
+
 # Slack 클라이언트 초기화
-slack_token = "YOUR_BOT_TOKEN"  # 실제 봇 토큰으로 교체해주세요
-slack_client = WebClient(token=slack_token)
-SLACK_CHANNEL = "YOUR_CHANNEL_ID"
+slack_client = WebClient(token=SLACK_TOKEN)
 
 
-def send_slack_message(message):
+def send_slack_message(channel, message):
     try:
         response = slack_client.chat_postMessage(
-            channel=SLACK_CHANNEL,
+            channel=channel,
             text=message
         )
     except SlackApiError as e:
         print(f"Error sending message: {e}")
 
-def print_and_slack(message):
+def send_slack(channel, message):
     print(message)
-    send_slack_message(message)
+    send_slack_message(channel, message)
 
 
+# 사용 예시
+def print_and_slack_CB(message):
+    send_slack(SLACK_CHANNEL_CHATBOT, message)s
+
+def print_and_slack_M(message):
+    send_slack(SLACK_CHANNEL_MUSIC, message)
 
 
 app = Flask(__name__)
@@ -65,7 +74,8 @@ def reactKoElectraChatBot(chat_id):
     if message_data and 'messageFromFlutter' in message_data:
         message = message_data['messageFromFlutter']
 
-        print_and_slack(f"\n😀 사용자 : {message}\n")
+        print_and_slack_CB(f"\n👾 채팅 로그\n")
+        print_and_slack_CB(f"\n😀 사용자 : {message}\n")
 
     sentence = request.args.get("s")
     if message is None or len(message) == 0 or sentence == '\n':
@@ -112,9 +122,11 @@ def recommendMusic():
     memberID = data['memberId']
     emotionI = data['afterEmotion']
 
-    print_and_slack(f"\n📍 ID : {memberID}")
+    print_and_slack_M(f"\n📍 음악 생성 로그 ")
+    
+    print_and_slack_M(f"\n📍 ID : {memberID}")
 
-    print_and_slack(f"\n📍 감정 : {emotionI}")
+    print_and_slack_M(f"\n📍 감정 : {emotionI}")
 
     if not memberID:
         return jsonify({'error': 'memberId 값이 없습니다.'}), 400
@@ -124,17 +136,16 @@ def recommendMusic():
 
     try:
         generate_music(memberID, emotionI) # 감정에 따른 BGM 생성
-        print_and_slack("음악 파일이 성공적으로 생성되었습니다. ")
 
         return jsonify({'message': '음악 파일이 성공적으로 생성되었습니다.'}), 200
     except Exception as e:
-        print_and_slack("👾 음악 파일 생성 에러 👾")
+        print_and_slack_M(" 음악 파일 생성 에러 ")
         return jsonify({'error': str(e)}), 500
 
         
 
 if __name__ == '__main__':
-    app.run(debug=False,host="0.0.0.0",port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=False,host="0.0.0.0",port=int(os.environ.get("PORT", 8081)))
 
 
 
