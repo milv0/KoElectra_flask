@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
+import threading
 
 
 from model.emotion import Emotion
@@ -114,33 +115,38 @@ def analyze():
 
 
 
+
+def generate_music_async(memberID, emotionI):
+    try:
+        generate_music(memberID, emotionI)
+        print_and_slack_M(f"🎵 음악 생성 완료 : ID {memberID}, 감정 {emotionI}")
+    except Exception as e:
+        print_and_slack_M(f"❌ 음악 생성 실패 : ID {memberID}, 감정 {emotionI}, 에러: {str(e)}")
+
+
 @app.route('/music/recommendation', methods=["POST"])
 
 def recommendMusic():
     data = request.json
 
-    memberID = data['memberId']
-    emotionI = data['afterEmotion']
+    memberID = data.get('memberId')
+    emotionI = data.get('afterEmotion')
 
     print_and_slack_M(f"\n📍 음악 생성 로그 ")
-    
     print_and_slack_M(f"\n📍 ID : {memberID}")
-
     print_and_slack_M(f"\n📍 감정 : {emotionI}")
 
     if not memberID:
-        return jsonify({'error': 'memberId 값이 없습니다.'}), 400
+        return jsonify({'❌ error': 'memberId 값이 없습니다.'}), 400
 
     if not emotionI:
-        return jsonify({'error': 'afterEmotion 값이 없습니다.'}), 400
+        return jsonify({'❌ error': 'afterEmotion 값이 없습니다.'}), 400
 
-    try:
-        generate_music(memberID, emotionI) # 감정에 따른 BGM 생성
+    # 비동기로 음악 생성 작업 실행
+    thread = threading.Thread(target=generate_music_async, args=(memberID, emotionI))
+    thread.start()
 
-        return jsonify({'message': '음악 파일이 성공적으로 생성되었습니다.'}), 200
-    except Exception as e:
-        print_and_slack_M(" 음악 파일 생성 에러 ")
-        return jsonify({'error': str(e)}), 500
+    return jsonify({'message': '음악 생성이 시작되었습니다. 백그라운드에서 처리됩니다.'}), 202
 
         
 
