@@ -8,13 +8,13 @@ from datetime import datetime
 import pytz
 
 # Slack key
-from key import SLACK_TOKEN, SLACK_CHANNEL_SERVER, SLACK_CHANNEL_CHATBOT, SLACK_CHANNEL_MUSIC
+from config import SLACK_TOKEN, SLACK_CHANNEL_SERVER, SLACK_CHANNEL_CHATBOT, SLACK_CHANNEL_MUSIC
 
 # Slack 설정
 slack_client = WebClient(token=SLACK_TOKEN)
 
 # Flask 애플리케이션 프로세스 이름 (예: python app.py)
-PROCESS_NAME = "python app1.py"
+PROCESS_NAME = "python app.py"
 
 # 한국 시간대 설정
 KST = pytz.timezone('Asia/Seoul')
