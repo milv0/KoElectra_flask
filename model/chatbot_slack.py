@@ -4,6 +4,7 @@ import os
 import logging
 import openai
 import re
+import sys
 
 
 # KoElectra
@@ -26,9 +27,9 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 # Slack 클라이언트 초기화
-slack_token = "YOUR_BOT_TOKEN"  # 실제 봇 토큰으로 교체해주세요
-slack_client = WebClient(token=slack_token)
-SLACK_CHANNEL = "YOU_CHANNEL_ID"
+SLACK_TOKEN = "YOUR_SLACK_TOKEN"
+SLACK_CHANNEL = "YOUR_SLACK_CHANNEL"
+slack_client = WebClient(token=SLACK_TOKEN)
 
 
 
@@ -47,31 +48,19 @@ def print_and_slack(message):
 
 
 
-def load_wellness_answer(category_path, answer_path):
+def load_wellness_answer(category_path):
     c_f = open(category_path, 'r')
-    a_f = open(answer_path, 'r')
 
     category_lines = c_f.readlines()
-    answer_lines = a_f.readlines()
 
     category = {}
-    answer = {}
     for line_num, line_data in enumerate(category_lines):
         data = line_data.split('    ')
         if len(data) != 2:
             print_and_slack(f"Error in category file at line {line_num}: {line_data}")
         category[data[1][:-1]] = data[0]
 
-    for line_num, line_data in enumerate(answer_lines):
-        data = line_data.split('    ')
-        keys = answer.keys()
-        if len(data) != 2:
-            print_and_slack(f"Error in answer file at line {line_num}: {line_data}")
-        if (data[0] in keys):
-            answer[data[0]] += [data[1][:-1]]
-        else:
-            answer[data[0]] = [data[1][:-1]]
-    return category, answer
+    return category
 
 def load_model(checkpoint_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -102,7 +91,7 @@ def preprocess_input(tokenizer, sent, device, max_seq_len=512):
         }
     return data
 
-def get_answer(category, answer, output, input_sentence):
+def get_answer(category, output, input_sentence):
     softmax_logit = torch.softmax(output[0], dim=-1).squeeze()
     max_index = torch.argmax(softmax_logit).item()
     max_index_value = softmax_logit[torch.argmax(softmax_logit)].item()
@@ -115,20 +104,12 @@ def get_answer(category, answer, output, input_sentence):
             if str(i) in category:
                 selected_categories.append(category[str(i)])
                 print_and_slack(f"카테고리 분류 -> [ {category[str(i)]} ]")
+                
     if not selected_categories:
         return "선택된 카테고리가 없습니다. 다시 입력해주세요", None, max_index_value, []
 
-    all_answers = []
-    for category_name in selected_categories:
-        if category_name in answer:
-            all_answers.extend(answer[category_name])
 
-    if not all_answers:
-        return "선택된 카테고리에 대한 답변이 없습니다.", None, max_index_value, []
-
-    selected_answer = random.choice(all_answers)
-
-    return selected_answer, selected_categories, max_index_value, all_answers
+    return selected_categories, max_index_value
 
 def gpt(input_sentence, selected_categories):
     openai.api_key = "YOUR_OPENAI_KEY"
@@ -185,22 +166,21 @@ def gpt(input_sentence, selected_categories):
 
 def chat(message):
     root_path = "."
-    answer_path = f"{root_path}/data/new_answer.txt"
-    category_path = f"{root_path}/data/new_category_v2.txt"
-    checkpoint_path = f"{root_path}/checkpoint/new_electra_v5.pth"
+    category_path = f"{root_path}/data/new_category_v7.txt"
+    checkpoint_path = f"{root_path}/checkpoint/new_electra_model_v7.pth"
 
-    category, answer = load_wellness_answer(category_path, answer_path)
+    category = load_wellness_answer(category_path)
     model, tokenizer, device = load_model(checkpoint_path)
 
     sent = str(message)
 
     data = preprocess_input(tokenizer, sent, device, 512)
     output = model(**data)
-    answer, category, max_index_value, all_answers = get_answer(category, answer, output, sent)
+    category, max_index_value = get_answer(category, output, sent)
 
     chatbot_answer = gpt(sent,category)
 
-    print_and_slack(f"\n🤖 챗봇 : {chatbot_answer}")
+    print_and_slack(f"\n👾 챗봇 : {chatbot_answer}")
     print("")
 
     return chatbot_answer, category
