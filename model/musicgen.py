@@ -1,5 +1,3 @@
-# model/recomm.py
-# 필요한 라이브러리 import
 from audiocraft.models import MusicGen
 from audiocraft.models import MultiBandDiffusion
 import math
@@ -7,16 +5,16 @@ import torchaudio
 import torch
 from audiocraft.data.audio import audio_write
 import boto3
+import sys
 
 # Slack
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 
-# Slack key
-from key import SLACK_TOKEN, SLACK_CHANNEL_SERVER, SLACK_CHANNEL_CHATBOT, SLACK_CHANNEL_MUSIC
-
 # Slack 클라이언트 초기화
+SLACK_TOKEN = "YOUR_SLACK_TOKEN"  
+SLACK_CHANNEL_MUSIC = "YOUR_SLACK_CHANNEL_ID"
 slack_client = WebClient(token=SLACK_TOKEN)
 
 def send_slack_message(message):
@@ -51,7 +49,7 @@ model.set_generation_params(
 
 # AWS S3 클라이언트 초기화 및 버킷 이름 설정
 s3 = boto3.client('s3')
-bucket_name = 'chatbotmg'  # S3 버킷 이름
+bucket_name = 'YOUR_BUCKET_NAME'  # S3 버킷 이름
 
 # 440Hz 비프 소리 생성 함수
 def get_bip_bip(bip_duration=0.125, frequency=440,
