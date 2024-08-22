@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from transformers import ElectraModel, ElectraConfig, ElectraTokenizer
 
 class KoELECTRAforSequenceClassfication(nn.Module):
-    def __init__(self, config, num_labels=359, hidden_dropout_prob=0.1):  # 432
+    def __init__(self, config, num_labels= 317, hidden_dropout_prob=0.1):  # 359
         super().__init__()
         self.num_labels = num_labels
         self.electra = ElectraModel(config)
