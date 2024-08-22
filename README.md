@@ -1,3 +1,4 @@
-KoElectra + Spotify + Emotion 
+KoElectra + Spotify + Emotion + Slack Monitoring 
 
-Flask Version
+
+key.py 만들어서 Slack Token / Channel ID 넣기
