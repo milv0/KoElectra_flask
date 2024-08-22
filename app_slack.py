@@ -23,7 +23,7 @@ from slack_sdk.errors import SlackApiError
 
 
 # Slack key
-from key import SLACK_TOKEN, SLACK_CHANNEL_SERVER, SLACK_CHANNEL_CHATBOT, SLACK_CHANNEL_MUSIC
+from config import SLACK_TOKEN, SLACK_CHANNEL_SERVER, SLACK_CHANNEL_CHATBOT, SLACK_CHANNEL_MUSIC
 
 
 # Slack 클라이언트 초기화
@@ -46,7 +46,7 @@ def send_slack(channel, message):
 
 # 사용 예시
 def print_and_slack_CB(message):
-    send_slack(SLACK_CHANNEL_CHATBOT, message)s
+    send_slack(SLACK_CHANNEL_CHATBOT, message)
 
 def print_and_slack_M(message):
     send_slack(SLACK_CHANNEL_MUSIC, message)
@@ -146,7 +146,8 @@ def recommendMusic():
     thread = threading.Thread(target=generate_music_async, args=(memberID, emotionI))
     thread.start()
 
-    return jsonify({'message': '음악 생성이 시작되었습니다. 백그라운드에서 처리됩니다.'}), 202
+    print_and_slack_M(f"🎶 음악 생성 시작 -> 백그라운드 처리중.")
+    return jsonify({'message': '음악 생성 시작 -> 백그라운드 처리중'}), 202
 
         
 
