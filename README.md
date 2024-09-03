@@ -22,8 +22,8 @@ KoElectra + Spotify + Emotion + Slack Monitoring
 key.py 만들어서 Slack Token / Channel ID 넣기
 
 
-<img src="sampleImg/signup.png" width="300" alt="로그인/회원가입">
+<img src="sampleImg/signup.png" width="500" alt="로그인/회원가입">
 
-<img src="sampleImg/chatbot.png" width="300" alt="챗봇 화면">
+<img src="sampleImg/chatbot.png" width="500" alt="챗봇 화면">
 
-<img src="sampleImg/diary_analyze_emotion.png" width="300" alt="일기 및 감정 저장">
+<img src="sampleImg/diary_analyze_emotion.png" width="500" alt="일기 및 감정 저장">
