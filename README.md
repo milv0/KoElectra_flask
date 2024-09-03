@@ -1,6 +1,11 @@
 # 공지
 이 레포지터리는 상담형 챗봇 및 일상 관리 프로그램에서 감정 분류 모델 및 음악 생성 모델 Flask / 서버 파트 입니다.
 
+# 사용 기술
+KoElectra + Spotify + Emotion + Slack Monitoring 
+
+## 추가 설명
+key.py 만들어서 Slack Token / Channel ID 넣기
 
 
 ## 마음씨 (마음°C)
@@ -16,10 +21,8 @@
 
 
 
-KoElectra + Spotify + Emotion + Slack Monitoring 
 
 
-key.py 만들어서 Slack Token / Channel ID 넣기
 
 
 <img src="sampleImg/signup.png" width="500" alt="로그인/회원가입">
