@@ -1,3 +1,6 @@
+이 레포지터리는 상담형 챗봇 및 일상 관리 프로그램에서 감정 분류 모델 및 음악 생성 모델 서버 파트 입니다.
+
+
 # 마음씨 (마음°C)
 우울증 환자들의 감정 관리를 위한 상담형 챗봇 및 일상 관리 프로그램
 
@@ -9,8 +12,14 @@
 
 
 
-
 KoElectra + Spotify + Emotion + Slack Monitoring 
 
 
 key.py 만들어서 Slack Token / Channel ID 넣기
+
+
+<img src="signup.png" width="300" alt="로그인/회원가입">
+
+<img src="chatbot.png" width="300" alt="챗봇 화면">
+
+<img src="diary_analyze_emotion.png" width="300" alt="일기 및 감정 저장">
