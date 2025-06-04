@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entries Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .entry {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .entry-content {
+            margin-bottom: 10px;
+        }
+        .entry-emotion {
+            color: #666;
+            font-style: italic;
+        }
+        .entry-actions {
+            margin-top: 10px;
+        }
+        .remove-btn {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .remove-btn:hover {
+            background-color: #e60000;
+        }
+        .add-entry-form {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        .no-entries {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Entries Management</h1>
+    
+    <div class="add-entry-form">
+        <h2>Add New Entry</h2>
+        <form id="add-entry-form">
+            <div class="form-group">
+                <label for="user-id">User ID:</label>
+                <input type="text" id="user-id" name="user-id" required>
+            </div>
+            <div class="form-group">
+                <label for="content">Content:</label>
+                <textarea id="content" name="content" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="emotion">Emotion:</label>
+                <select id="emotion" name="emotion">
+                    <option value="">Select emotion</option>
+                    <option value="joy">Joy</option>
+                    <option value="hope">Hope</option>
+                    <option value="neutrality">Neutrality</option>
+                    <option value="sadness">Sadness</option>
+                    <option value="anger">Anger</option>
+                    <option value="anxiety">Anxiety</option>
+                    <option value="tiredness">Tiredness</option>
+                    <option value="regret">Regret</option>
+                </select>
+            </div>
+            <button type="submit" class="submit-btn">Add Entry</button>
+        </form>
+    </div>
+    
+    <h2>Your Entries</h2>
+    <div id="entries-container">
+        <p class="no-entries">No entries found. Add an entry above.</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addEntryForm = document.getElementById('add-entry-form');
+            const entriesContainer = document.getElementById('entries-container');
+            const userIdInput = document.getElementById('user-id');
+            
+            // Load entries when user ID changes
+            userIdInput.addEventListener('change', function() {
+                if (userIdInput.value) {
+                    loadEntries(userIdInput.value);
+                }
+            });
+            
+            // Add entry form submission
+            addEntryForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const userId = document.getElementById('user-id').value;
+                const content = document.getElementById('content').value;
+                const emotion = document.getElementById('emotion').value;
+                
+                if (!userId || !content) {
+                    alert('User ID and content are required');
+                    return;
+                }
+                
+                addEntry(userId, content, emotion);
+            });
+            
+            // Function to load entries
+            function loadEntries(userId) {
+                fetch(`/entries?user_id=${userId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.entries && data.entries.length > 0) {
+                            displayEntries(data.entries);
+                        } else {
+                            entriesContainer.innerHTML = '<p class="no-entries">No entries found. Add an entry above.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading entries:', error);
+                        entriesContainer.innerHTML = '<p class="no-entries">Error loading entries. Please try again.</p>';
+                    });
+            }
+            
+            // Function to display entries
+            function displayEntries(entries) {
+                entriesContainer.innerHTML = '';
+                
+                entries.forEach(entry => {
+                    const entryElement = document.createElement('div');
+                    entryElement.className = 'entry';
+                    entryElement.dataset.id = entry.id;
+                    
+                    const contentElement = document.createElement('div');
+                    contentElement.className = 'entry-content';
+                    contentElement.textContent = entry.content;
+                    
+                    const emotionElement = document.createElement('div');
+                    emotionElement.className = 'entry-emotion';
+                    emotionElement.textContent = entry.emotion ? `Emotion: ${entry.emotion}` : 'No emotion specified';
+                    
+                    const actionsElement = document.createElement('div');
+                    actionsElement.className = 'entry-actions';
+                    
+                    const removeButton = document.createElement('button');
+                    removeButton.className = 'remove-btn';
+                    removeButton.textContent = 'Remove Entry';
+                    removeButton.addEventListener('click', function() {
+                        removeEntry(entry.id, userIdInput.value);
+                    });
+                    
+                    actionsElement.appendChild(removeButton);
+                    
+                    entryElement.appendChild(contentElement);
+                    entryElement.appendChild(emotionElement);
+                    entryElement.appendChild(actionsElement);
+                    
+                    entriesContainer.appendChild(entryElement);
+                });
+            }
+            
+            // Function to add an entry
+            function addEntry(userId, content, emotion) {
+                const data = {
+                    user_id: userId,
+                    content: content,
+                    emotion: emotion || null
+                };
+                
+                fetch('/entries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.entry_id) {
+                        // Clear form
+                        document.getElementById('content').value = '';
+                        document.getElementById('emotion').value = '';
+                        
+                        // Reload entries
+                        loadEntries(userId);
+                    } else {
+                        alert('Error adding entry: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding entry:', error);
+                    alert('Error adding entry. Please try again.');
+                });
+            }
+            
+            // Function to remove an entry
+            function removeEntry(entryId, userId) {
+                if (confirm('Are you sure you want to remove this entry?')) {
+                    fetch(`/entries/${entryId}?user_id=${userId}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message === 'Entry removed successfully') {
+                            // Remove entry from DOM
+                            const entryElement = document.querySelector(`.entry[data-id="${entryId}"]`);
+                            if (entryElement) {
+                                entryElement.remove();
+                            }
+                            
+                            // If no entries left, show message
+                            if (entriesContainer.children.length === 0) {
+                                entriesContainer.innerHTML = '<p class="no-entries">No entries found. Add an entry above.</p>';
+                            }
+                        } else {
+                            alert('Error removing entry: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error removing entry:', error);
+                        alert('Error removing entry. Please try again.');
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
