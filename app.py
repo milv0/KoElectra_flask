@@ -1,7 +1,7 @@
 import os
 import jsons
 import asyncio
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from werkzeug.exceptions import BadRequest
 from flask_cors import CORS
 import threading
@@ -9,6 +9,8 @@ import boto3
 from functools import wraps
 from flask import current_app
 from concurrent.futures import ThreadPoolExecutor
+import sqlite3
+import uuid
 
 import asyncio
 from asyncio import Queue
@@ -27,6 +29,26 @@ CORS(app)
 app.config['JSON_AS_ASCII'] = False
 
 emotion = Emotion()
+
+# Initialize SQLite database for entries
+def init_db():
+    db_path = app.config.get('DB_PATH', 'entries.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS entries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        emotion TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Initialize the database when the app starts
+init_db()
 
 # Slack 클라이언트 초기화
 slack_client = WebClient(token=SLACK_TOKEN)
@@ -55,6 +77,85 @@ def isRunning():
     message = "server is running"
     # send_slack(SLACK_CHANNEL_SERVER, message)
     return message
+
+# Routes for managing entries
+@app.route('/entries', methods=['GET'])
+def get_entries():
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'User ID is required'}), 400
+    
+    db_path = app.config.get('DB_PATH', 'entries.db')
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM entries WHERE user_id = ? ORDER BY created_at DESC', (user_id,))
+    entries = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return jsonify({'entries': entries})
+
+@app.route('/entries', methods=['POST'])
+def add_entry():
+    data = request.json
+    
+    if not data or 'user_id' not in data or 'content' not in data:
+        return jsonify({'error': 'User ID and content are required'}), 400
+    
+    user_id = data['user_id']
+    content = data['content']
+    emotion_value = data.get('emotion')
+    
+    entry_id = str(uuid.uuid4())
+    
+    db_path = app.config.get('DB_PATH', 'entries.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        'INSERT INTO entries (id, user_id, content, emotion) VALUES (?, ?, ?, ?)',
+        (entry_id, user_id, content, emotion_value)
+    )
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        'message': 'Entry added successfully',
+        'entry_id': entry_id
+    }), 201
+
+@app.route('/entries/<entry_id>', methods=['DELETE'])
+def remove_entry(entry_id):
+    user_id = request.args.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'User ID is required'}), 400
+    
+    db_path = app.config.get('DB_PATH', 'entries.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Check if the entry exists and belongs to the user
+    cursor.execute('SELECT id FROM entries WHERE id = ? AND user_id = ?', (entry_id, user_id))
+    entry = cursor.fetchone()
+    
+    if not entry:
+        conn.close()
+        return jsonify({'error': 'Entry not found or does not belong to the user'}), 404
+    
+    # Delete the entry
+    cursor.execute('DELETE FROM entries WHERE id = ?', (entry_id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': 'Entry removed successfully'}), 200
+
+@app.route('/manage-entries')
+def manage_entries():
+    return render_template('entries.html')
 
 def async_route(f):
     @wraps(f)
